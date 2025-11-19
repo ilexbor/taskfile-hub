@@ -4,6 +4,7 @@
       <w>errexit</w>
       <w>nounset</w>
       <w>pipefail</w>
+      <w>taskfiles</w>
     </words>
   </dictionary>
 </component>
