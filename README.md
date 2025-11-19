@@ -24,14 +24,14 @@ A comprehensive collection of reusable and modular Taskfile configurations desig
 
 ### Quick Start: Include all taskfiles
 
-Include the main Taskfile to get access to all available tasks:
+Include the main Taskfile to get access to all available tasks (replace `v0.1.0` with the desired release version):
 
 ```yaml
 version: '3'
 
 includes:
   taskfile-hub:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/v0.1.0/Taskfile.yml
     flatten: true
 ```
 
@@ -42,24 +42,26 @@ task -l
 
 ### Include only specific taskfiles
 
-Or include only the taskfiles you need directly:
+Or include only the taskfiles you need directly (replace `v0.1.0` with the desired release version):
 
 ```yaml
 version: '3'
 
 includes:
   dart:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.dart.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/v0.1.0/Taskfile.dart.yml
   docker:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.docker.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/v0.1.0/Taskfile.docker.yml
   flutter:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.flutter.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/v0.1.0/Taskfile.flutter.yml
   npm:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.npm.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/v0.1.0/Taskfile.npm.yml
   python:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.python.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/v0.1.0/Taskfile.python.yml
   # Add other taskfiles as needed
 ```
+
+> **Note**: Check the [releases page](https://github.com/ilexbor/taskfile-hub/releases) for the latest available version.
 
 ## Supported tools
 
