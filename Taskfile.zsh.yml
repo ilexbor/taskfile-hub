@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+
+  run:
+    desc: Run command via zsh
+    label: zsh:run
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+    cmd: |
+      if [ -n "{{.CLI_ARGS}}" ]; then
+        COMMANDS='{{.CLI_ARGS}}'
+      else
+        if ! COMMANDS=$(cat); then
+          task tui:print-error MESSAGES="'[ERROR] Error reading commands from stdin'" >&2
+          exit 1
+        fi
+      fi
+
+      SCRIPT='set -euo pipefail; trap '\''exit'\'' ERR; '"$COMMANDS"
+
+      printf '%s' "$SCRIPT" | zsh \
+      {{if ne .STDOUT "true"}}1>/dev/null{{end}} \
+      {{if ne .STDERR "true"}}2>/dev/null{{end}}

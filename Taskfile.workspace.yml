@@ -1,0 +1,41 @@
+version: '3'
+
+includes:
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  clean:
+    desc: Remove unnecessary files and directories
+    label: workspace:clean
+    dir: '{{.ROOT_DIR}}'
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: |
+            # First remove directories entirely (with prune to avoid traversing their contents)
+            find . -type d \( \
+              -name '.dart_tool' -o \
+              -name 'build' \
+            \) -prune -exec rm -rf {} + 2>/dev/null
+
+            # Then remove remaining generated files
+            find . -type f \( \
+              -name '*.g.dart' -o \
+              -name '*.gen.dart' -o \
+              -name '*.freezed.dart' -o \
+              -name '*.generated.dart' -o \
+              -name '*.gr.dart' -o \
+              -name '.flutter-plugins' -o \
+              -name '.flutter-plugins-dependencies' \
+            \) -delete 2>/dev/null
+
+            # Finally remove empty directories
+            find . -depth -type d -empty -delete 2>/dev/null
+          SPINNER_TITLE: 'Removing unnecessary files and directories'
+          USER_WORKING_DIR: '{{.ROOT_DIR}}'

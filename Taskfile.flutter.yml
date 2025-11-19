@@ -1,0 +1,140 @@
+version: '3'
+
+includes:
+  build-runner:
+    taskfile: Taskfile.build-runner.yml
+    internal: true
+  melos:
+    taskfile: Taskfile.melos.yml
+    internal: true
+  pub:
+    taskfile: Taskfile.pub.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  analyze:
+    desc: Run flutter analyze in the current directory
+    label: flutter:analyze:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    sources:
+      - '**/*.dart'
+      - '**/analysis_options.yaml'
+      - '**/pubspec.lock'
+      - '**/pubspec.yaml'
+      - '**/pubspec_overrides.yaml'
+    method: checksum
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running flutter analyze"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter analyze --no-pub --suppress-analytics .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  analyze-exec:
+    desc: Run flutter analyze in the specified packages
+    label: flutter:analyze-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task flutter:analyze
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  clean:
+    desc: Run flutter clean in the current directory
+    label: flutter:clean:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running flutter clean"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter clean --suppress-analytics
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  clean-exec:
+    desc: Run flutter clean in the specified packages
+    label: flutter:clean-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task flutter:clean
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  coverage:
+    desc: Run flutter test --coverage in the current directory
+    label: flutter:coverage:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Generating coverage report"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter test --coverage --suppress-analytics
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  coverage-exec:
+    desc: Run flutter test --coverage in the specified packages
+    label: flutter:coverage-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task flutter:coverage
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  test:
+    desc: Run flutter test in the current directory
+    label: flutter:test:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running tests"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter test --suppress-analytics
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  test-exec:
+    desc: Run flutter test in the specified packages
+    label: flutter:test-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task flutter:test
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

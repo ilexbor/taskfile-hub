@@ -1,0 +1,69 @@
+version: '3'
+
+includes:
+  npm:
+    taskfile: Taskfile.npm.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  check:
+    desc: Check code formatting in the current directory
+    label: prettier:check:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running prettier check"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx prettier --check .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  check-exec:
+    desc: Check code formatting in the specified packages
+    label: prettier:check-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task prettier:check
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  write:
+    desc: Format code in the current directory
+    label: prettier:write:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running prettier write"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx prettier --write .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  write-exec:
+    desc: Format code in the specified packages
+    label: prettier:write-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task prettier:write
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

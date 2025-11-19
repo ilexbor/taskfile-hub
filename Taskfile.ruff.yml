@@ -1,0 +1,53 @@
+version: '3'
+
+includes:
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  check:
+    desc: Check Python code with ruff in the current directory
+    label: ruff:check:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running ruff check"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: ruff check .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  fix:
+    desc: Fix Python code with ruff in the current directory
+    label: ruff:fix:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running ruff fix"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: ruff check --fix .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  format:
+    desc: Format Python code with ruff in the current directory
+    label: ruff:format:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running ruff format"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: ruff format .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

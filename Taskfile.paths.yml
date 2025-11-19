@@ -1,0 +1,242 @@
+version: '3'
+
+tasks:
+
+  # TODO: Need to manually verify implementation
+  filter-paths:
+    label: paths:filter-paths
+    dir: '{{.USER_WORKING_DIR}}'
+    vars:
+      PATHS: '{{.PATHS}}'
+      SCOPE: '{{.SCOPE | default ""}}'
+    cmd: |
+      # Check that PATHS is not empty
+      if [ -z "{{.PATHS}}" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable PATHS is not set or empty'" >&2
+        exit 1
+      fi
+
+      # Check that PATHS doesn't consist only of spaces and newlines
+      if [ -z "$(echo '{{.PATHS}}' | tr -d '[:space:]')" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable PATHS contains only spaces and newlines'" >&2
+        exit 1
+      fi
+
+      # Step 1: Normalize all paths from PATHS
+
+      if ! NORMALIZED_PATHS=$(task paths:normalize-paths PATHS="{{.PATHS}}"); then
+        task tui:print-error MESSAGES="'[ERROR] An error occurred during path normalization'" >&2
+        exit 1
+      fi
+
+      # Check that normalization produced a result
+      if [ -z "$NORMALIZED_PATHS" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable NORMALIZED_PATHS is empty after path normalization'" >&2
+        exit 1
+      fi
+
+      # If SCOPE is empty, return all normalized paths
+      if [ -z "{{.SCOPE}}" ]; then
+        echo "$NORMALIZED_PATHS"
+        exit 0
+      fi
+
+      # Step 2: Prepare SCOPE_ITEMS for filtering
+
+      if ! SCOPE_ITEMS=$(echo "{{.SCOPE}}" | tr ',' '\n'); then
+        task tui:print-error MESSAGES="'[ERROR] Error splitting SCOPE into items'" >&2
+        exit 1
+      fi
+
+      # Normalize and validate all SCOPE_ITEMS
+      NORMALIZED_SCOPES=""
+
+      while IFS= read -r SCOPE_ITEM; do
+        # Remove spaces
+        if ! SCOPE_ITEM=$(echo "$SCOPE_ITEM" | xargs); then
+          task tui:print-error MESSAGES="'[ERROR] Failed to remove spaces from SCOPE_ITEM'" >&2
+          exit 1
+        fi
+
+        if [ -z "$SCOPE_ITEM" ]; then
+          task tui:print-error MESSAGES="'[ERROR] Empty element found in SCOPE variable'" >&2
+          exit 1
+        fi
+
+        # Normalize SCOPE_ITEM convert to absolute path
+        IS_GLOB="false"
+        NORMALIZED_SCOPE=""
+
+        # Handle special value "."
+        if [ "$SCOPE_ITEM" = "." ]; then
+          NORMALIZED_SCOPE="{{.USER_WORKING_DIR}}"
+        # If contains "*", this is a glob pattern
+        elif [[ "$SCOPE_ITEM" == *"*"* ]]; then
+          IS_GLOB="true"
+          # For glob pattern: if starts with /, use as is, otherwise add ROOT_DIR
+          if [[ "$SCOPE_ITEM" = /* ]]; then
+            NORMALIZED_SCOPE="$SCOPE_ITEM"
+          else
+            NORMALIZED_SCOPE="{{.ROOT_DIR}}/$SCOPE_ITEM"
+          fi
+        # Absolute or relative path - normalize through separate task
+        else
+          if ! NORMALIZED_SCOPE="$(task paths:normalize-path PATH="$SCOPE_ITEM")"; then
+            task tui:print-error MESSAGES="'[ERROR] An error occurred during SCOPE_ITEM normalization'" >&2
+            exit 1
+          fi
+        fi
+
+        if [ -z "$NORMALIZED_SCOPE" ]; then
+          task tui:print-error MESSAGES="'[ERROR] Internal error: NORMALIZED_SCOPE is empty after processing SCOPE_ITEM=$SCOPE_ITEM'" >&2
+          exit 1
+        fi
+
+        # Save pattern with glob flag (format: "is_glob|pattern")
+        NORMALIZED_SCOPES="$NORMALIZED_SCOPES"$'\n'"$IS_GLOB|$NORMALIZED_SCOPE"
+      done <<< "$SCOPE_ITEMS"
+
+      # Remove all empty lines
+      if ! NORMALIZED_SCOPES=$(echo "$NORMALIZED_SCOPES" | grep -v '^$'); then
+        task tui:print-error MESSAGES="'[ERROR] Failed to process any element from SCOPE'" >&2
+        exit 1
+      fi
+
+      # Step 3: Filter paths - iterate through each normalized path
+
+      # Function to check if path matches patterns
+      match_path() {
+        local path="$1"
+        local scopes="$2"
+
+        while IFS='|' read -r is_glob scope; do
+          if [ "$is_glob" = "true" ]; then
+            if [[ "$path" == $scope ]]; then
+              return 0
+            fi
+          else
+            if [ "$path" = "$scope" ]; then
+              return 0
+            fi
+          fi
+        done <<< "$scopes"
+
+        return 1
+      }
+
+      FILTERED_PATHS=""
+
+      while IFS= read -r normalized_path; do
+        if [ -z "$normalized_path" ]; then
+          task tui:print-error MESSAGES="'[ERROR] Internal error: empty path found in NORMALIZED_PATHS'" >&2
+          exit 1
+        fi
+
+        # Check if path matches at least one SCOPE
+        if match_path "$normalized_path" "$NORMALIZED_SCOPES"; then
+          FILTERED_PATHS="$FILTERED_PATHS"$'\n'"$normalized_path"
+        fi
+      done <<< "$NORMALIZED_PATHS"
+
+      # Remove duplicates and empty lines
+      if ! FILTERED_PATHS=$(echo "$FILTERED_PATHS" | sort -u | grep -v '^$'); then
+        # grep -v will return 1 if there are no matches
+        FILTERED_PATHS=""
+      fi
+
+      echo "$FILTERED_PATHS"
+
+  normalize-path:
+    label: paths:normalize-path
+    dir: '{{.USER_WORKING_DIR}}'
+    vars:
+      PATH: '{{.PATH}}'
+    cmd: |
+      path="{{.PATH}}"
+
+      # Check that path is not empty
+      if [ -z "$path" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable PATH is not set or empty'" >&2
+        exit 1
+      fi
+
+      # Check that path doesn't contain newlines
+      if [[ "$path" == *$'\n'* ]]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable PATH contains newline'" >&2
+        exit 1
+      fi
+
+      # Convert to absolute path (os.path.join automatically ignores ROOT_DIR if path is already absolute)
+      if ! normalized_path="$(python3 -c "import os; print(os.path.normpath(os.path.join('{{.ROOT_DIR}}', '$path')))")"; then
+        task tui:print-error MESSAGES="'[ERROR] Error executing os.path.normpath() to normalize path: $path'" >&2
+        exit 1
+      fi
+
+      echo "$normalized_path"
+
+  normalize-paths:
+    label: paths:normalize-paths
+    dir: '{{.USER_WORKING_DIR}}'
+    vars:
+      PATHS: '{{.PATHS}}'
+    cmd: |
+      # Check that PATHS variable is not empty
+      if [ -z "{{.PATHS}}" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable PATHS is not set or empty'" >&2
+        exit 1
+      fi
+
+      # Check that PATHS doesn't consist only of spaces and newlines
+      if [ -z "$(echo '{{.PATHS}}' | tr -d '[:space:]')" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable PATHS contains only spaces and newlines'" >&2
+        exit 1
+      fi
+
+      NORMALIZED_PATHS=""
+
+      while IFS= read -r path; do
+        if [ -z "$path" ]; then
+          task tui:print-error MESSAGES="'[ERROR] Empty string found in PATHS variable'" >&2
+          exit 1
+        fi
+
+        # Check that path doesn't contain newlines
+        if [[ "$path" == *$'\n'* ]]; then
+          task tui:print-error MESSAGES="'[ERROR] Path contains newline'" >&2
+          exit 1
+        fi
+
+        # Normalize path
+        if ! normalized_path="$(task paths:normalize-path PATH="$path")"; then
+          task tui:print-error MESSAGES="'[ERROR] Failed to normalize path'" >&2
+          exit 1
+        fi
+
+        if [ -z "$normalized_path" ]; then
+          task tui:print-error MESSAGES="'[ERROR] task paths:normalize-path returned empty string'" >&2
+          exit 1
+        fi
+
+        NORMALIZED_PATHS="$NORMALIZED_PATHS"$'\n'"$normalized_path"
+      done <<< "{{.PATHS}}"
+
+      # Check that NORMALIZED_PATHS is not empty
+      if [ -z "$NORMALIZED_PATHS" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable NORMALIZED_PATHS is empty after path normalization'" >&2
+        exit 1
+      fi
+
+      # Check that NORMALIZED_PATHS doesn't consist only of spaces and newlines
+      if [ -z "$(echo "$NORMALIZED_PATHS" | tr -d '[:space:]')" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable NORMALIZED_PATHS contains only spaces and newlines'" >&2
+        exit 1
+      fi
+
+      # Remove duplicates and empty lines
+      if ! NORMALIZED_PATHS=$(echo "$NORMALIZED_PATHS" | sort -u | grep -v '^$'); then
+        # grep -v will return 1 if there are no matches (all lines are empty)
+        task tui:print-error MESSAGES="'[ERROR] Variable NORMALIZED_PATHS contains only empty lines'" >&2
+        exit 1
+      fi
+
+      echo "$NORMALIZED_PATHS"

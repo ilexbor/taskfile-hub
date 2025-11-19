@@ -1,0 +1,69 @@
+version: '3'
+
+includes:
+  npm:
+    taskfile: Taskfile.npm.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  generate:
+    desc: Generate Better Auth database schema in the current directory
+    label: better-auth:generate:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running better-auth generate"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx @better-auth/cli@latest generate --yes
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  generate-exec:
+    desc: Generate Better Auth database schema in the specified packages
+    label: better-auth:generate-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task better-auth:generate
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  migrate:
+    desc: Apply Better Auth database migrations in the current directory
+    label: better-auth:migrate:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running better-auth migrate"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx @better-auth/cli@latest migrate --yes
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  migrate-exec:
+    desc: Apply Better Auth database migrations in the specified packages
+    label: better-auth:migrate-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task better-auth:migrate
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

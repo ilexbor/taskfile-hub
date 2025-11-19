@@ -1,0 +1,151 @@
+version: '3'
+
+includes:
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  list:
+    desc: Show list of directories with Docker files in JSON format
+    label: docker:list
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    cmds:
+      - |
+        (find . -name "Dockerfile" -o -name "Dockerfile.*" -o -name "docker-compose*.yml" -o -name "docker-compose*.yaml") 2>/dev/null | python3 -c "
+        import sys, json, os
+
+        results = []
+        seen = set()
+
+        for line in sys.stdin:
+            path = line.strip()
+            if not path:
+                continue
+
+            # Get the directory where the file is located
+            directory = os.path.dirname(os.path.abspath(path))
+
+            # Avoid duplicates (if there are multiple Docker files in one directory)
+            if directory in seen:
+                continue
+            seen.add(directory)
+
+            # Use directory name as the name
+            name = os.path.basename(directory)
+
+            results.append({'name': name, 'directory': directory})
+
+        results.sort(key=lambda x: x['name'])
+        print(json.dumps(results, indent=2))
+        "
+
+  exec:
+    desc: Run command with interactive Docker directory selection
+    label: docker:exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        # Get list of directories in JSON format
+        PACKAGES=$(task docker:list | jq -c '.')
+
+        if [ -z "$PACKAGES" ] || [ "$PACKAGES" = "[]" ]; then
+          task tui:print-error MESSAGES="'[ERROR] No directories with Docker files found'"
+          exit 1
+        fi
+
+        # Call the general shell:exec task
+        task shell:exec \
+          PACKAGES="$PACKAGES" \
+          SPINNER_TITLE='{{.SPINNER_TITLE}}' \
+          STDOUT='{{.STDOUT}}' \
+          STDERR='{{.STDERR}}' \
+          -- {{.CLI_ARGS}}
+
+  compose-up:
+    desc: Start docker-compose in the current directory
+    label: docker:compose-up:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Starting docker-compose"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: zsh:run
+        vars:
+          CLI_ARGS: docker-compose up -d
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  compose-up-exec:
+    desc: Start docker-compose in the specified directories
+    label: docker:compose-up-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: exec
+        vars:
+          CLI_ARGS: task docker:compose-up
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  compose-down:
+    desc: Stop docker-compose in the current directory
+    label: docker:compose-down:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Stopping docker-compose"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: zsh:run
+        vars:
+          CLI_ARGS: docker-compose down
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  compose-down-exec:
+    desc: Stop docker-compose in the specified directories
+    label: docker:compose-down-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: exec
+        vars:
+          CLI_ARGS: task docker:compose-down
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  compose-logs:
+    desc: Show docker-compose logs
+    label: docker:compose-logs:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SERVICE: '{{.SERVICE | default ""}}'
+    cmds:
+      - docker-compose logs -f {{.SERVICE}}
+
+  compose-logs-exec:
+    desc: Show docker-compose logs in the specified directories
+    label: docker:compose-logs-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SERVICE: '{{.SERVICE | default ""}}'
+    cmds:
+      - task: exec
+        vars:
+          CLI_ARGS: task docker:compose-logs SERVICE='{{.SERVICE}}'
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

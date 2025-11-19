@@ -1,0 +1,69 @@
+version: '3'
+
+includes:
+  npm:
+    taskfile: Taskfile.npm.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  build:
+    desc: Compile TypeScript in the current directory
+    label: tsc:build:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running tsc build"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx tsc
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  build-exec:
+    desc: Compile TypeScript in the specified packages
+    label: tsc:build-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task tsc:build
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  check:
+    desc: Check TypeScript types in the current directory without generating files
+    label: tsc:check:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running tsc check"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx tsc --noEmit
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  check-exec:
+    desc: Check TypeScript types in the specified packages without generating files
+    label: tsc:check-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task tsc:check
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

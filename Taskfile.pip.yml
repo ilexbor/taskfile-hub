@@ -1,0 +1,9 @@
+version: '3'
+
+includes:
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+

@@ -1,0 +1,39 @@
+version: '3'
+
+includes:
+  npm:
+    taskfile: Taskfile.npm.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  watch:
+    desc: Run TypeScript file with automatic reload on changes
+    label: tsx:watch:{{.FILE}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      FILE: '{{.FILE | default "src/index.ts"}}'
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default (printf "Running tsx watch %s" .FILE)}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - npx tsx watch {{.FILE}}
+
+  watch-exec:
+    desc: Run TypeScript file with automatic reload in the specified packages
+    label: tsx:watch-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      FILE: '{{.FILE | default "src/index.ts"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task tsx:watch FILE={{.FILE}}
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

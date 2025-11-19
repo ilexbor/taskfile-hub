@@ -1,0 +1,111 @@
+version: '3'
+
+includes:
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  bootstrap:
+    desc: Run melos bootstrap
+    label: melos:bootstrap
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running melos bootstrap"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm dart run melos bootstrap
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  clean:
+    desc: Run melos clean
+    label: melos:clean
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running melos clean"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm dart run melos clean
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  exec:
+    desc: Run melos exec
+    label: melos:exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        # Get list of packages in JSON format
+        PACKAGES=$(fvm dart run melos list --json | jq -c 'map({name: .name, directory: .location})')
+
+        if [ -z "$PACKAGES" ]; then
+          task tui:print-error MESSAGES="'[ERROR] No Dart packages found'"
+          exit 1
+        fi
+
+        # Call shell:exec task
+        task shell:exec \
+          PACKAGES="$PACKAGES" \
+          SPINNER_TITLE='{{.SPINNER_TITLE}}' \
+          STDOUT='{{.STDOUT}}' \
+          STDERR='{{.STDERR}}' \
+          -- {{.CLI_ARGS}}
+
+  list:
+    desc: Run melos list
+    label: melos:list
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    cmds:
+      - fvm dart run melos list --long
+
+  run:
+    desc: Run melos run in the current directory
+    label: melos:run:{{.SCRIPT}}
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SCRIPT: '{{.SCRIPT}}'
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default (printf "Running melos run %s" .SCRIPT)}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm dart run melos run {{.SCRIPT}}
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  version:
+    desc: Run melos version
+    label: melos:version
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    cmds:
+      - fvm dart run melos version
+
+  version-exec:
+    desc: Run melos version in the specified packages
+    label: melos:version-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: exec
+        vars:
+          CLI_ARGS: task melos:version
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

@@ -1,0 +1,92 @@
+version: '3'
+
+tasks:
+
+  print-error:
+    label: tui:print-error
+    vars:
+      MESSAGES: '{{.MESSAGES}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        gum style >&2 \
+            --foreground=1 \
+            {{.MESSAGES}}
+
+  print-section:
+    label: tui:print-section
+    vars:
+      MESSAGES: '{{.MESSAGES}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        gum style \
+            --foreground=6 \
+            --bold \
+            {{.MESSAGES}}
+
+  print-success:
+    label: tui:print-success
+    vars:
+      MESSAGES: '{{.MESSAGES}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        gum style \
+            --foreground=2 \
+            {{.MESSAGES}}
+
+  run-with-spinner:
+    label: tui:run-with-spinner
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+    cmd: |
+      if [ -n "{{.CLI_ARGS}}" ]; then
+        COMMANDS='{{.CLI_ARGS}}'
+      else
+        if ! COMMANDS=$(cat); then
+          task tui:print-error MESSAGES="'[ERROR] Error reading commands from stdin'" >&2
+          exit 1
+        fi
+      fi
+
+      gum spin \
+          --show-error \
+          {{if (eq .STDOUT "true")}}--show-stdout{{end}} \
+          {{if (eq .STDERR "true")}}--show-stderr{{end}} \
+          --spinner=dot \
+          --spinner.foreground=15 \
+          --title="{{.SPINNER_TITLE }}" \
+          -- sh -c "
+            printf '%s' '$COMMANDS' | task zsh:run \
+                                      --taskfile '{{.TASKFILE_DIR}}/Taskfile.yml' \
+                                      STDOUT='{{.STDOUT}}' \
+                                      STDERR='{{.STDERR}}' \
+            | tr '\r' '\n'
+          "
+
+  select:
+    label: tui:select
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      HEADER: '{{.HEADER | default "Select option:"}}'
+      OPTIONS: '{{.OPTIONS}}'
+    cmd: |
+      if [ -z "{{.OPTIONS}}" ]; then
+        task tui:print-error MESSAGES="'[ERROR] Variable OPTIONS is not defined'" >&2
+        exit 1
+      fi
+
+      echo "{{.OPTIONS}}" | gum choose \
+          --cursor="> " \
+          --header="{{.HEADER}}" \
+          --limit=1 \
+          --ordered

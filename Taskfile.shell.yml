@@ -1,0 +1,179 @@
+version: '3'
+
+tasks:
+
+  exec:
+    desc: Execute command in the selected packages
+    label: shell:exec
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      PACKAGES: '{{.PACKAGES}}'
+      SCOPE: '{{.SCOPE | default ""}}'
+      SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        # Check that PACKAGES is not empty
+        if [ -z "{{.PACKAGES}}" ] || [ "{{.PACKAGES}}" = "[]" ]; then
+          task tui:print-error MESSAGES="'[ERROR] Variable PACKAGES is not set or empty'"
+          exit 1
+        fi
+
+        # If SCOPE is specified, filter and don't show menu
+        if [ -n "{{.SCOPE}}" ]; then
+          # Extract paths from PACKAGES
+          if ! DIRECTORIES=$(echo '{{.PACKAGES}}' | jq -r '.[].directory'); then
+            task tui:print-error MESSAGES="'[ERROR] Error extracting directories from PACKAGES'"
+            exit 1
+          fi
+
+          # Apply filter
+          if ! FILTERED_DIRECTORIES=$(task paths:filter-paths PATHS="$DIRECTORIES" SCOPE='{{.SCOPE}}'); then
+            task tui:print-error MESSAGES="'[ERROR] Error filtering directories by SCOPE={{.SCOPE}}'"
+            exit 1
+          fi
+
+          # Check for empty result
+          if [ -z "$FILTERED_DIRECTORIES" ]; then
+            task tui:print-error MESSAGES="'[ERROR] No directories found matching SCOPE={{.SCOPE}}'"
+            exit 1
+          fi
+
+          # Convert back to PACKAGES
+          PACKAGES_TO_PROCESS="[]"
+          while IFS= read -r dir; do
+            if ! PACKAGE=$(echo '{{.PACKAGES}}' | jq -c --arg dir "$dir" '.[] | select(.directory == $dir)'); then
+              task tui:print-error MESSAGES="'[ERROR] Error finding package for directory: $dir'"
+              exit 1
+            fi
+            if [ -n "$PACKAGE" ]; then
+              if ! PACKAGES_TO_PROCESS=$(echo "$PACKAGES_TO_PROCESS" | jq -c --argjson pkg "$PACKAGE" '. + [$pkg]'); then
+                task tui:print-error MESSAGES="'[ERROR] Error adding package to list'"
+                exit 1
+              fi
+            fi
+          done <<< "$FILTERED_DIRECTORIES"
+        else
+          # Extract package names
+          if ! PACKAGE_NAMES=$(echo '{{.PACKAGES}}' | jq -r '.[].name'); then
+            task tui:print-error MESSAGES="'[ERROR] Error extracting package names'"
+            exit 1
+          fi
+
+          # Add "in all packages" option
+          if ! FILTER_ITEMS=$(printf "in all packages\n%s" "$PACKAGE_NAMES"); then
+            task tui:print-error MESSAGES="'[ERROR] Error forming options list'"
+            exit 1
+          fi
+
+          # Add numbers to packages
+          if ! NUMBERED_FILTER_ITEMS=$(echo "$FILTER_ITEMS" | nl -w1 -s') '); then
+            task tui:print-error MESSAGES="'[ERROR] Error adding numbers to packages'"
+            exit 1
+          fi
+
+          if ! SELECTION=$( \
+            echo "$NUMBERED_FILTER_ITEMS" | \
+            gum filter \
+              --header="Where to run command?" \
+              --header.foreground=6 \
+              --placeholder="Enter package name" \
+              --indicator="*" \
+              --indicator.foreground=6 \
+              --match.foreground=6 \
+              --no-fuzzy
+          ); then
+            echo "Package selection cancelled"
+            exit 1
+          fi
+
+          # Extract package name (remove number)
+          if ! SELECTED_ITEM=$(echo "$SELECTION" | sed 's/^[0-9]*) //'); then
+            task tui:print-error MESSAGES="'[ERROR] Error processing selected item'"
+            exit 1
+          fi
+
+          if [ -z "$SELECTED_ITEM" ]; then
+            echo "Package selection cancelled"
+            exit 1
+          fi
+
+          # Form list of packages to process
+          if [ "$SELECTED_ITEM" = "in all packages" ]; then
+            PACKAGES_TO_PROCESS='{{.PACKAGES}}'
+          else
+            if ! PACKAGES_TO_PROCESS=$(echo '{{.PACKAGES}}' | jq -c --arg package "$SELECTED_ITEM" '[.[] | select(.name == $package)]'); then
+              task tui:print-error MESSAGES="'[ERROR] Error filtering package: $SELECTED_ITEM'"
+              exit 1
+            fi
+          fi
+        fi
+
+        # Track total time
+        if ! TOTAL_TIME_START=$(python3 -c 'import time; print(int(time.time() * 1000))'); then
+          task tui:print-error MESSAGES="'[ERROR] Error getting start time'"
+          exit 1
+        fi
+
+        # Process selected packages
+        echo "$PACKAGES_TO_PROCESS" | jq -c '.[]' | while read -r package; do
+          if ! PACKAGE_NAME=$(echo "$package" | jq -r '.name'); then
+            task tui:print-error MESSAGES="'[ERROR] Error extracting package name'"
+            exit 1
+          fi
+          if ! PACKAGE_PATH=$(echo "$package" | jq -r '.directory'); then
+            task tui:print-error MESSAGES="'[ERROR] Error extracting package path'"
+            exit 1
+          fi
+
+          # Convert path to absolute through our task (cross-platform)
+          if ! PACKAGE_PATH="$(task paths:normalize-path PATH="$PACKAGE_PATH")"; then
+            task tui:print-error MESSAGES="'[ERROR] Error normalizing package path: $PACKAGE_PATH'"
+            exit 1
+          fi
+
+          task tui:print-section MESSAGES="'>> ${PACKAGE_NAME}'"
+
+          if ! TIME_START=$(python3 -c 'import time; print(int(time.time() * 1000))'); then
+            task tui:print-error MESSAGES="'[ERROR] Error getting command start time'"
+            exit 1
+          fi
+          printf '%s' '{{.CLI_ARGS}}' | task zsh:run \
+                                        SPINNER_TITLE='{{.SPINNER_TITLE}}' \
+                                        STDERR='{{.STDERR}}' \
+                                        STDOUT='{{.STDOUT}}' \
+                                        USER_WORKING_DIR="$PACKAGE_PATH"
+          EXIT_CODE=$?
+          if ! TIME_END=$(python3 -c 'import time; print(int(time.time() * 1000))'); then
+            task tui:print-error MESSAGES="'[ERROR] Error getting command end time'"
+            exit 1
+          fi
+
+          TIME_ELAPSED=$((TIME_END - TIME_START))
+          TIME_MINUTES=$((TIME_ELAPSED / 60000))
+          TIME_SECONDS=$(((TIME_ELAPSED % 60000) / 1000))
+          TIME_MILLISECONDS=$((TIME_ELAPSED % 1000))
+          TIME_STRING="TIME: $TIME_MINUTES:$(printf '%02d' $TIME_SECONDS).$(printf '%03d' $TIME_MILLISECONDS)"
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            task tui:print-error MESSAGES="'[ERROR] $TIME_STRING' 'ERROR with exit code $EXIT_CODE' ''"
+            exit $EXIT_CODE
+          fi
+
+          task tui:print-success MESSAGES="'$TIME_STRING' 'SUCCESS with exit code $EXIT_CODE' ''"
+        done
+
+        # Calculate total time
+        if ! TOTAL_TIME_END=$(python3 -c 'import time; print(int(time.time() * 1000))'); then
+          task tui:print-error MESSAGES="'[ERROR] Error getting end time'"
+          exit 1
+        fi
+        TOTAL_TIME_ELAPSED=$((TOTAL_TIME_END - TOTAL_TIME_START))
+        TOTAL_TIME_MINUTES=$((TOTAL_TIME_ELAPSED / 60000))
+        TOTAL_TIME_SECONDS=$(((TOTAL_TIME_ELAPSED % 60000) / 1000))
+        TOTAL_TIME_MILLISECONDS=$((TOTAL_TIME_ELAPSED % 1000))
+        TOTAL_TIME_STRING="TOTAL TIME: $TOTAL_TIME_MINUTES:$(printf '%02d' $TOTAL_TIME_SECONDS).$(printf '%03d' $TOTAL_TIME_MILLISECONDS)"
+
+        task tui:print-section MESSAGES="'$TOTAL_TIME_STRING' 'SUCCESS'"

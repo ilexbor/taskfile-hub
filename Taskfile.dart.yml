@@ -1,0 +1,77 @@
+version: '3'
+
+includes:
+  melos:
+    taskfile: Taskfile.melos.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  fix:
+    desc: Run dart fix in the current directory
+    label: dart:fix:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    sources:
+      - '**/*.dart'
+      - '**/analysis_options.yaml'
+    method: checksum
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running dart fix"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm dart fix --apply --suppress-analytics
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  fix-exec:
+    desc: Run dart fix in the specified packages
+    label: dart:fix-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task dart:fix
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  format:
+    desc: Run dart format in the current directory
+    label: dart:format:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    sources:
+      - '**/analysis_options.yaml'
+      - '**/*.dart'
+    method: checksum
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running dart format"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm dart format --suppress-analytics .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  format-exec:
+    desc: Run dart format in the specified packages
+    label: dart:format-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task dart:format
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

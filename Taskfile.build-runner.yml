@@ -1,0 +1,86 @@
+version: '3'
+
+includes:
+  melos:
+    taskfile: Taskfile.melos.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  build:
+    desc: Run build_runner build in the current directory
+    label: build-runner:build:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    sources:
+      - '**/*.dart'
+      - '**/build.yaml'
+      - '**/pubspec.yaml'
+      - '**/pubspec_overrides.yaml'
+    method: checksum
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running build_runner build"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm dart run build_runner build --delete-conflicting-outputs
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  build-exec:
+    desc: Run build_runner build in the selected packages
+    label: build-runner:build-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task build-runner:build
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  clean:
+    desc: Run build_runner clean in the current directory
+    label: build-runner:clean:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running build_runner clean"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm dart run build_runner clean
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  clean-exec:
+    desc: Run build_runner clean in the selected packages
+    label: build-runner:clean-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task build-runner:clean
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  watch:
+    desc: Run build_runner watch in the current directory
+    label: build-runner:watch
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - fvm dart run build_runner watch --delete-conflicting-outputs

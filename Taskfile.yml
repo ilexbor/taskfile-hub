@@ -1,0 +1,58 @@
+version: '3'
+
+set: [ errexit, nounset, pipefail ]
+silent: true
+
+vars:
+  DEFAULT_STDOUT: '{{.STDOUT | default "true"}}'
+  DEFAULT_STDERR: '{{.STDERR | default "true"}}'
+
+includes:
+  better-auth:
+    taskfile: Taskfile.better-auth.yml
+  brew:
+    taskfile: Taskfile.brew.yml
+  build-runner:
+    taskfile: Taskfile.build-runner.yml
+  dart:
+    taskfile: Taskfile.dart.yml
+  docker:
+    taskfile: Taskfile.docker.yml
+  env:
+    taskfile: Taskfile.env.yml
+  eslint:
+    taskfile: Taskfile.eslint.yml
+  flutter:
+    taskfile: Taskfile.flutter.yml
+  melos:
+    taskfile: Taskfile.melos.yml
+  nodejs:
+    taskfile: Taskfile.nodejs.yml
+  npm:
+    taskfile: Taskfile.npm.yml
+  paths:
+    taskfile: Taskfile.paths.yml
+  pip:
+    taskfile: Taskfile.pip.yml
+  prettier:
+    taskfile: Taskfile.prettier.yml
+  python:
+    taskfile: Taskfile.python.yml
+  pub:
+    taskfile: Taskfile.pub.yml
+  pytype:
+    taskfile: Taskfile.pytype.yml
+  ruff:
+    taskfile: Taskfile.ruff.yml
+  shell:
+    taskfile: Taskfile.shell.yml
+  tsc:
+    taskfile: Taskfile.tsc.yml
+  tui:
+    taskfile: Taskfile.tui.yml
+  tsx:
+    taskfile: Taskfile.tsx.yml
+  workspace:
+    taskfile: Taskfile.workspace.yml
+  zsh:
+    taskfile: Taskfile.zsh.yml

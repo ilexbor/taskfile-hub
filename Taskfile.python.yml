@@ -1,0 +1,72 @@
+version: '3'
+
+includes:
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  exec:
+    desc: Run command with interactive Python package selection
+    label: python:exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        # Get list of packages in JSON format
+        PACKAGES=$(task python:list | jq -c '.')
+
+        if [ -z "$PACKAGES" ] || [ "$PACKAGES" = "[]" ]; then
+          task tui:print-error MESSAGES="'[ERROR] No Python packages found'"
+          exit 1
+        fi
+
+        # Call the general shell:exec task
+        task shell:exec \
+          PACKAGES="$PACKAGES" \
+          SPINNER_TITLE='{{.SPINNER_TITLE}}' \
+          STDOUT='{{.STDOUT}}' \
+          STDERR='{{.STDERR}}' \
+          -- {{.CLI_ARGS}}
+
+  list:
+    desc: Show list of Python packages in JSON format
+    label: python:list
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    cmds:
+      - |
+        find . -name "pyproject.toml" -type f -not -path "*/.*" -not -path "*/node_modules/*" | python3 -c "
+        import sys, json, os
+
+        try:
+            if sys.version_info >= (3, 11):
+                import tomllib
+            else:
+                import tomli as tomllib
+        except ImportError:
+            print('[]')
+            sys.exit(1)
+
+        results = []
+        for line in sys.stdin:
+            path = line.strip()
+            if path:
+                try:
+                    with open(path, 'rb') as f:
+                        data = tomllib.load(f)
+                        name = data.get('project', {}).get('name', '')
+                        if name:
+                            directory = os.path.dirname(os.path.abspath(path))
+                            results.append({'name': name, 'directory': directory})
+                except:
+                    pass
+
+        results.sort(key=lambda x: x['name'])
+        print(json.dumps(results, indent=2))
+        "

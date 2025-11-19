@@ -1,0 +1,69 @@
+version: '3'
+
+includes:
+  npm:
+    taskfile: Taskfile.npm.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  check:
+    desc: Check code with ESLint in the current directory
+    label: eslint:check:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running eslint check"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx eslint .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  check-exec:
+    desc: Check code with ESLint in the specified packages
+    label: eslint:check-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task eslint:check
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  fix:
+    desc: Fix code with ESLint in the current directory
+    label: eslint:fix:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running eslint fix"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npx eslint --fix .
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  fix-exec:
+    desc: Fix code with ESLint in the specified packages
+    label: eslint:fix-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: npm:exec
+        vars:
+          CLI_ARGS: task eslint:fix
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

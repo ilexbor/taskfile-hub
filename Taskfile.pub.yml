@@ -1,0 +1,174 @@
+version: '3'
+
+includes:
+  melos:
+    taskfile: Taskfile.melos.yml
+    internal: true
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  add:
+    desc: Add package to the current directory
+    label: pub:add:{{.PACKAGE}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      PACKAGE: '{{.PACKAGE}}'
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default (printf "Adding package %s" .PACKAGE)}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter pub add {{.PACKAGE}}
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  add-dev:
+    desc: Add dev package to the current directory
+    label: pub:add-dev:{{.PACKAGE}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      PACKAGE: '{{.PACKAGE}}'
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default (printf "Adding dev package %s" .PACKAGE)}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter pub add --dev {{.PACKAGE}}
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  cache-clean:
+    desc: Run flutter pub clean cache
+    label: pub:cache-clean
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        interactive: true
+        vars:
+          CLI_ARGS: echo "y" | fvm flutter pub cache clean --suppress-analytics
+          SPINNER_TITLE: 'Running flutter clean cache'
+
+  deps:
+    desc: Show dependency tree in the current directory
+    label: pub:deps:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    cmds:
+      - fvm flutter pub deps
+
+  get:
+    desc: Get Dart/Flutter dependencies in the current directory
+    label: pub:get:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    sources:
+      - '**/pubspec.lock'
+      - '**/pubspec.yaml'
+      - '**/pubspec_overrides.yaml'
+    method: checksum
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running flutter pub get"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter pub get --color
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  get-exec:
+    desc: Get Dart/Flutter dependencies in the specified packages
+    label: pub:get-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task pub:get
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  outdated:
+    desc: Check outdated Dart/Flutter dependencies in the current directory
+    label: pub:outdated:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running flutter pub outdated"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter pub outdated --color
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  outdated-exec:
+    desc: Check outdated Dart/Flutter dependencies in the specified packages
+    label: pub:outdated-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task pub:outdated
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  remove:
+    desc: Remove package from the current directory
+    label: pub:remove:{{.PACKAGE}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      PACKAGE: '{{.PACKAGE}}'
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default (printf "Removing package %s" .PACKAGE)}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter pub remove {{.PACKAGE}}
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  upgrade:
+    desc: Upgrade Dart/Flutter dependencies in the current directory
+    label: pub:upgrade:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running flutter pub upgrade"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: fvm flutter pub upgrade --color
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  upgrade-exec:
+    desc: Upgrade Dart/Flutter dependencies in the specified packages
+    label: pub:upgrade-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: melos:exec
+        vars:
+          CLI_ARGS: task pub:upgrade
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'

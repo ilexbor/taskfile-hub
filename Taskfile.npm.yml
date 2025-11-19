@@ -1,0 +1,97 @@
+version: '3'
+
+includes:
+  shell:
+    taskfile: Taskfile.shell.yml
+    internal: true
+
+tasks:
+
+  exec:
+    desc: Run command with interactive npm package selection
+    label: npm:exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - |
+        # Get list of packages in JSON format
+        PACKAGES=$(npm query ".workspace" --json | jq -c 'map({name: .name, directory: .location})')
+
+        if [ -z "$PACKAGES" ] || [ "$PACKAGES" = "[]" ]; then
+          task tui:print-error MESSAGES="'[ERROR] No npm packages found'"
+          exit 1
+        fi
+
+        # Call the general shell:exec task
+        task shell:exec \
+          PACKAGES="$PACKAGES" \
+          SPINNER_TITLE='{{.SPINNER_TITLE}}' \
+          STDOUT='{{.STDOUT}}' \
+          STDERR='{{.STDERR}}' \
+          -- {{.CLI_ARGS}}
+
+  install:
+    desc: Install npm dependencies in the current directory
+    label: npm:install:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    sources:
+      - '**/package-lock.json'
+      - '**/package.json'
+    method: checksum
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running npm install"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npm install
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  install-exec:
+    desc: Install npm dependencies in the specified packages
+    label: npm:install-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: exec
+        vars:
+          CLI_ARGS: task npm:install
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  outdated:
+    desc: Check outdated npm dependencies in the current directory
+    label: npm:outdated:{{.USER_WORKING_DIR}}
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    vars:
+      SPINNER_TITLE: '{{.SPINNER_TITLE | default "Running npm outdated"}}'
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: tui:run-with-spinner
+        vars:
+          CLI_ARGS: npm outdated
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
+
+  outdated-exec:
+    desc: Check outdated npm dependencies in the specified packages
+    label: npm:outdated-exec
+    dir: '{{.ROOT_DIR}}'
+    interactive: true
+    vars:
+      STDERR: '{{.STDERR | default .DEFAULT_STDERR}}'
+      STDOUT: '{{.STDOUT | default .DEFAULT_STDOUT}}'
+    cmds:
+      - task: exec
+        vars:
+          CLI_ARGS: task npm:outdated
+          SPINNER_TITLE: '{{.SPINNER_TITLE}}'
