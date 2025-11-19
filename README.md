@@ -31,7 +31,7 @@ version: '3'
 
 includes:
   taskfile-hub:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/master/Taskfile.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.yml
     flatten: true
 ```
 
@@ -49,15 +49,15 @@ version: '3'
 
 includes:
   dart:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/master/Taskfile.dart.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.dart.yml
   docker:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/master/Taskfile.docker.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.docker.yml
   flutter:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/master/Taskfile.flutter.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.flutter.yml
   npm:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/master/Taskfile.npm.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.npm.yml
   python:
-    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/master/Taskfile.python.yml
+    taskfile: https://raw.githubusercontent.com/ilexbor/taskfile-hub/main/Taskfile.python.yml
   # Add other taskfiles as needed
 ```
 

@@ -32,8 +32,6 @@ includes:
     taskfile: Taskfile.npm.yml
   paths:
     taskfile: Taskfile.paths.yml
-  pip:
-    taskfile: Taskfile.pip.yml
   prettier:
     taskfile: Taskfile.prettier.yml
   python:
