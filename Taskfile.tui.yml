@@ -4,8 +4,8 @@ set: [ errexit, nounset, pipefail ]
 silent: true
 
 vars:
-  DEFAULT_STDOUT: '{{.STDOUT | DEFAULT_STDOUT | default "true"}}'
-  DEFAULT_STDERR: '{{.STDERR | DEFAULT_STDERR | default "true"}}'
+  DEFAULT_STDOUT: '{{.STDOUT | .DEFAULT_STDOUT | default "true"}}'
+  DEFAULT_STDERR: '{{.STDERR | .DEFAULT_STDERR | default "true"}}'
 
 tasks:
 
