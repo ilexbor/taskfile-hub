@@ -14,7 +14,8 @@ tasks:
     interactive: true
     cmds:
       - |
-        dart run lib/kek.dart
+        echo "TASKFILE_DIR = {{.TASKFILE_DIR}}"
+        dart run {{.TASKFILE_DIR}}/lib/kek.dart
 
 includes:
   better-auth:
