@@ -7,6 +7,15 @@ vars:
   DEFAULT_STDOUT: '{{.STDOUT | default (.DEFAULT_STDOUT | default "true")}}'
   DEFAULT_STDERR: '{{.STDERR | default (.DEFAULT_STDERR | default "true")}}'
 
+tasks:
+  kek:
+    desc: KEK
+    dir: '{{.USER_WORKING_DIR}}'
+    interactive: true
+    cmds:
+      - |
+        dart run lib/kek.dart
+
 includes:
   better-auth:
     taskfile: Taskfile.better-auth.yml

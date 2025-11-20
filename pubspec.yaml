@@ -1,0 +1,11 @@
+name: taskfile_hub_workspace
+
+version: '1.0.0'
+
+dev_dependencies:
+  melos: ^7.3.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+publish_to: none
